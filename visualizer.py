@@ -8,8 +8,10 @@ from matplotlib.dates import date2num
 import numpy as np
 
 DEBUG = False
+nameProvided = False
 
 messages = []
+years = {}
 
 splitHeader       = "<div class=\"message\"><div class=\"message_header\">"
 splitSpan         = "</span>"
@@ -18,19 +20,25 @@ replaceMeta       = "<span class=\"meta\">"
 replaceText       = "</div></div><p>"
 replaceParagraph  = "</p>"
 
-years = {}
 
 
 def main():
 
-  if(len(sys.argv) > 2):
+  if len(sys.argv) > 1:
     messageName = sys.argv[1]
-    fbName = sys.argv[2].split(',')
-    print fbName
   else:
     print "Please provide the file with the messages from your Facebook account as an argument. \nIf you have downloaded your profile archive it should be located in the folder \"html\" called \"messages.htm\"."
-    print "The second argument should be your user name on Facebook."
     sys.exit()
+
+  if (len(sys.argv) > 2) and (len(sys.argv[2]) > 0):
+    fbName = sys.argv[2].split(',')
+    for i in range(len(fbName)):
+      fbName[i] = fbName[i].lstrip().rstrip()
+    print "Found following names: " + str(fbName)
+    nameProvided = True
+  else:
+    print "To differentiate between your incoming and outgoing messages please enter your Facebook name as the second parameter. If you changed it during the time you can enter multiple names, separated by a comma."
+    nameProvided = False
 
   if messageName is not None:
     with open(messageName, 'r') as mFile:
@@ -72,7 +80,7 @@ def main():
       if str(tmpYear) + "_in" not in years.keys():
         years[str(tmpYear) + "_in"] = 0
         years[str(tmpYear) + "_out"] = 0
-      if tmp.name in fbName:
+      if nameProvided and (tmp.name in fbName):
         direction = "_out"
         amountLetters_out = amountLetters_out + len(tmp.text)
       else:
@@ -83,10 +91,9 @@ def main():
     # print results
     keylist = years.keys()
     keylist.sort()
-    for key in keylist:
-      print "%s: %s" % (key, years[key])
-    print amountLetters_in
-    print amountLetters_out
+    if DEBUG:
+      for key in keylist:
+        print "%s: %s" % (key, years[key])
     print "Parsed " + str(len(messages)) + " messages" 
 
   values_in = []
@@ -118,7 +125,8 @@ def main():
   x = date2num(dates_out)
 
   ax.bar(x-w, values_in,width=w,color='b',align='center', label='incoming messages')
-  ax.bar(x, values_out,width=w,color='g',align='center', label='outgoing messages')
+  if nameProvided:
+    ax.bar(x, values_out,width=w,color='g',align='center', label='outgoing messages')
   ax.xaxis_date()
   ax.autoscale(tight=True)
   ax.grid(True)
